@@ -32,7 +32,7 @@ void term::cursor_set_height(size_t percent) {
   } else if (percent > 100) {
     percent = 100;
   }
-  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  HANDLE const hOut = GetStdHandle(STD_OUTPUT_HANDLE);
   CONSOLE_CURSOR_INFO cursorInfo{};
   cursorInfo.dwSize = static_cast<DWORD>(percent);
   if (!SetConsoleCursorInfo(hOut, &cursorInfo)) {
@@ -42,7 +42,7 @@ void term::cursor_set_height(size_t percent) {
   throw "term::cursor_set_height is only supported on Windows";
 #endif
 }
-void term::cursor_goto(size_t x, size_t y) {
+void term::cursor_goto(size_t const x, size_t const y) {
   // row;col
   // ^^^ starts from 1 rather than 0 so we must add 1 to `y`
   printf("\33[%zu;%zuH", y + 1, x);
@@ -70,7 +70,7 @@ void term::cursor_restore_last_saved_pos() {
 }
 // Top-leftmost position is (0, 0).
 term::CursorPos term::cursor_get_pos() {
-  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  HANDLE const hOut = GetStdHandle(STD_OUTPUT_HANDLE);
   CONSOLE_SCREEN_BUFFER_INFO consoleInfo{};
   if (GetConsoleScreenBufferInfo(hOut, &consoleInfo)) {
     return {
@@ -111,7 +111,7 @@ void term::set_color_text_default(ColorText const color) {
 
 void term::remove_scrollbar() {
 #if defined(_WIN32)
-  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  HANDLE const hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
   CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo{};
   GetConsoleScreenBufferInfo(hOut, &screenBufferInfo);
