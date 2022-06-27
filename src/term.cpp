@@ -33,7 +33,7 @@ void term::cursor_set_height(size_t percent) {
     percent = 100;
   }
   HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_CURSOR_INFO cursorInfo;
+  CONSOLE_CURSOR_INFO cursorInfo{};
   cursorInfo.dwSize = static_cast<DWORD>(percent);
   if (!SetConsoleCursorInfo(hOut, &cursorInfo)) {
     std::exit(1);
@@ -71,7 +71,7 @@ void term::cursor_restore_last_saved_pos() {
 // Top-leftmost position is (0, 0).
 term::CursorPos term::cursor_get_pos() {
   HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+  CONSOLE_SCREEN_BUFFER_INFO consoleInfo{};
   if (GetConsoleScreenBufferInfo(hOut, &consoleInfo)) {
     return {
       static_cast<size_t>(consoleInfo.dwCursorPosition.X),
@@ -113,7 +113,7 @@ void term::remove_scrollbar() {
 #if defined(_WIN32)
   HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo;
+  CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo{};
   GetConsoleScreenBufferInfo(hOut, &screenBufferInfo);
 
   short const windowWidth =
@@ -124,7 +124,7 @@ void term::remove_scrollbar() {
   short const screenBufferWidth = screenBufferInfo.dwSize.X;
   short const screenBufferHeight = screenBufferInfo.dwSize.Y;
 
-  COORD newSize;
+  COORD newSize{};
   newSize.X = screenBufferWidth;
   newSize.Y = windowHeight;
 

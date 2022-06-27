@@ -81,7 +81,6 @@ int main() {
           shouldRender = false;
           break;
         }
-        std::string const &currLine = lines[cursorPos.m_y];
         std::string const &lineBelow = lines[cursorPos.m_y + 1];
         if (cursorPos.m_x <= lineBelow.length() - 1) {
           term::cursor_move_down(1);
@@ -103,7 +102,6 @@ int main() {
           shouldRender = false;
           break;
         }
-        std::string const &currLine = lines[cursorPos.m_y];
         std::string const &lineAbove = lines[cursorPos.m_y - 1];
         if (cursorPos.m_x <= lineAbove.length() - 1) {
           term::cursor_move_up(1);
