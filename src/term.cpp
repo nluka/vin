@@ -10,8 +10,6 @@
 
 using term::ColorText;
 
-static ColorText g_defaultColorText = ColorText::DEFAULT;
-
 void term::set_color_text(ColorText const color) {
   printf("\033[%dm", static_cast<int>(color));
 }
@@ -101,12 +99,8 @@ void term::printf_colored(
   va_start(args, format);
   set_color_text(color);
   vprintf(format, args);
-  set_color_text(g_defaultColorText);
+  set_color_text(ColorText::DEFAULT);
   va_end(args);
-}
-
-void term::set_color_text_default(ColorText const color) {
-  g_defaultColorText = color;
 }
 
 void term::remove_scrollbar() {

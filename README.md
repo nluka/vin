@@ -8,6 +8,7 @@ basics:
 - [x] read/render files
 - [] config file
 - [] save edits
+- [] undo/redo
 - [] fast file navigation
 
 command mode:
@@ -16,15 +17,16 @@ command mode:
 - [] bol/eol navigation
 - [] word forward/backward navigation
 - [] line numbers
-- [] duplicating lines
-- [] deleting lines
+- [] duplicate lines
+- [] delete lines
 - [] page forward/backward navigation
 - [] scroll up/down 1 line
 
 insert mode:
-- [] inputting characters
-- [] delete characters
+- [] input character
+- [] delete character
 - [] cut/copy/paste
 
 advanced:
 - [] syntax highlighting
+- [] multiple cursors

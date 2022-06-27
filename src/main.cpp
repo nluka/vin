@@ -50,7 +50,7 @@ int main() {
     }
 
     // in most cases we will we want to re-render,
-    // so this flag is defaults to true.
+    // so this flag defaults to true.
     // there are however a few edge cases where we don't want to re-render,
     // in those cases we set this flag false.
     bool shouldRender = true;
