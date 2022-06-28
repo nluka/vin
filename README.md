@@ -6,7 +6,7 @@ My own Vim inspired text-editor.
 
 basics:
 - [x] read/render files
-- [] config file
+- [x] user config file
 - [] save edits
 - [] undo/redo
 - [] fast file navigation
