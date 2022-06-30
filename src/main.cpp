@@ -213,6 +213,52 @@ int main(int const argc, char const *const *const argv) {
         }
       }
     }
+    else if (c == usrconf::nav::key_move_line_start())
+    {
+      term::cursor::Position const cursorPos = term::cursor::get_pos();
+
+      if (cursorPos.m_x != 0) {
+        // y-index of the cursor
+        size_t const cursorYPosInFile =
+          term::cursor::get_pos().m_y + firstVisibleLineIdx;
+
+        std::string const &currLine = lines[cursorYPosInFile];
+
+        size_t const firstNonWhitespaceCharPos = ([&currLine](){
+          for (size_t i = 0; i < currLine.length(); ++i) {
+            char const c = currLine[i];
+            if (c != ' ' && c != '\t') {
+              return i;
+            }
+          }
+          return currLine.length() - 1;
+        })();
+
+        term::cursor::move(
+          cursorPos.m_x > firstNonWhitespaceCharPos
+            ? firstNonWhitespaceCharPos
+            : 0,
+          cursorPos.m_y // stay on the same line
+        );
+      }
+    }
+    else if (c == usrconf::nav::key_move_line_end())
+    {
+      term::cursor::Position const cursorPos = term::cursor::get_pos();
+
+      // y-index of the cursor
+      size_t const cursorYPosInFile =
+        term::cursor::get_pos().m_y + firstVisibleLineIdx;
+
+      std::string const &currLine = lines[cursorYPosInFile];
+
+      if (cursorPos.m_x != currLine.length()) {
+        term::cursor::move(
+          currLine.length(),
+          cursorPos.m_y // stay on the same line
+        );
+      }
+    }
     else
     {
       #ifdef _WIN32

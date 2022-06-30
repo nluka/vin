@@ -22,6 +22,14 @@ static char s_keyMoveRight = 'f';
 char usrconf::nav::key_move_right() {
   return s_keyMoveRight;
 }
+static char s_keyMoveLineStart = 'a';
+char usrconf::nav::key_move_line_start() {
+  return s_keyMoveLineStart;
+}
+static char s_keyMoveLineEnd = 's';
+char usrconf::nav::key_move_line_end() {
+  return s_keyMoveLineEnd;
+}
 
 void usrconf::load() {
   std::vector<std::string> lines{};
@@ -98,6 +106,10 @@ void usrconf::load() {
       s_keyMoveLeft = value[0];
     } else if (setting == "moveRight") {
       s_keyMoveRight = value[0];
+    } else if (setting == "moveLineStart") {
+      s_keyMoveLineStart = value[0];
+    } else if (setting == "moveLineEnd") {
+      s_keyMoveLineEnd = value[0];
     } else {
       logger::write(
         logger::EventType::WRN,

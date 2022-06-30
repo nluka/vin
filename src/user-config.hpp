@@ -12,8 +12,8 @@ namespace nav {
   char key_move_down();
   char key_move_left();
   char key_move_right();
-  // char key_move_bol();
-  // char key_move_eol();
+  char key_move_line_start();
+  char key_move_line_end();
   // char key_move_word_forward();
   // char key_move_word_backward();
   // char key_page_forward();
