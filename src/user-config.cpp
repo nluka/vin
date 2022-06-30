@@ -27,26 +27,25 @@ void usrconf::load() {
   std::vector<std::string> lines{};
   // extract lines
   {
-    char const *const fPathname = "vin.cfg";
-    std::ifstream file(fPathname);
+    std::ifstream file("vin.cfg");
 
     if (!file.is_open()) {
       logger::write(
         logger::EventType::WRN,
-        "failed to open file `%s`, using default config",
-        fPathname
+        "failed to open file `vin.cfg`, using default config"
       );
       return;
     } else if (!file.good()) {
       logger::write(
         logger::EventType::WRN,
-        "failed to read file `%s`, using default config",
-        fPathname
+        "failed to read file `vin.cfg`, using default config"
       );
       return;
     }
 
     lines.reserve(4);
+
+    logger::write(logger::EventType::INF, "began reading `vin.cfg`");
 
     char temp[512];
     // extract lines
@@ -66,7 +65,8 @@ void usrconf::load() {
       line.empty() ||
       // is comment
       line.front() == '#' ||
-      line.front() == ';') {
+      line.front() == ';'
+    ) {
       continue;
     }
 
@@ -78,7 +78,7 @@ void usrconf::load() {
     if (delimPos == std::string::npos) {
       logger::write(
         logger::EventType::WRN,
-        "missing '=' on line %zu",
+        "line %zu in `vin.cfg` is missing '='",
         lineNum
       );
       continue;
@@ -101,9 +101,11 @@ void usrconf::load() {
     } else {
       logger::write(
         logger::EventType::WRN,
-        "unknown setting `%s`",
+        "unknown setting `%s` in `vin.cfg`",
         setting
       );
     }
   }
+
+  logger::write(logger::EventType::INF, "finished reading `vin.cfg`");
 }

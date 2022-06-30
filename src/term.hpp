@@ -5,29 +5,6 @@
 // Make sure your terminal supports ANSI escape sequences when using this module!
 namespace term {
 
-struct CursorPos {
-  // starts from 0
-  size_t m_x, m_y;
-};
-
-void cursor_hide();
-void cursor_show();
-void cursor_disable_blinking();
-void cursor_set_height(size_t percent);
-void cursor_goto(size_t col, size_t row);
-void cursor_move_up(size_t n);
-void cursor_move_down(size_t n);
-void cursor_move_right(size_t n);
-void cursor_move_left(size_t n);
-void cursor_move_to_top_left();
-void cursor_save_pos();
-void cursor_restore_last_saved_pos();
-CursorPos cursor_get_pos();
-
-void clear_screen();
-void clear_curr_line();
-void clear_to_end_of_line();
-
 enum class ColorText {
   DEFAULT = 0,
   RED = 31,
@@ -48,10 +25,34 @@ void set_color_text(ColorText);
 // `term::set_color_text_default` set it to, which is `ColorText::DEFAULT` by default.
 void printf_colored(ColorText, char const *fmt, ...);
 
-// Changes the default text color applied after calling `term::printf_colored`.
-void set_color_text_default(ColorText color);
-
+void clear_screen();
+void clear_curr_line();
+void clear_to_end_of_line();
 void remove_scrollbar();
+size_t height_in_lines();
+
+namespace cursor {
+
+  struct Position {
+    // starts from 0
+    size_t m_x, m_y;
+  };
+
+  void hide();
+  void show();
+  void disable_blinking();
+  void set_size(size_t percent);
+  void move(size_t col, size_t row);
+  void move_up(size_t n);
+  void move_down(size_t n);
+  void move_right(size_t n);
+  void move_left(size_t n);
+  void move_to_top_left();
+  void save_pos();
+  void restore_last_saved_pos();
+  Position get_pos();
+
+} // namespace cursor
 
 } // namespace term
 
