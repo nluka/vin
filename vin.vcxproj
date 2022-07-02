@@ -169,11 +169,14 @@
   <ItemGroup>
     <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\movement.cpp" />
     <ClCompile Include="src\term.cpp" />
     <ClCompile Include="src\user-config.cpp" />
+    <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\logger.hpp" />
+    <ClInclude Include="src\movement.hpp" />
     <ClInclude Include="src\term.hpp" />
     <ClInclude Include="src\user-config.hpp" />
     <ClInclude Include="src\util.hpp" />

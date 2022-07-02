@@ -6,22 +6,28 @@
 // super useful reference:
 // https://www2.math.upenn.edu/~kazdan/210/computer/ansi.html
 
-using term::ColorText;
+using term::ColorFG, term::ColorBG;
 
-void term::set_color_text(ColorText const color) {
+void term::set_color_fg(ColorFG const color) {
+  printf("\033[%dm", static_cast<int>(color));
+}
+void term::set_color_bg(ColorBG const color) {
   printf("\033[%dm", static_cast<int>(color));
 }
 
 void term::printf_colored(
-  ColorText const color,
+  ColorFG const colorFg,
+  ColorBG const colorBg,
   char const *const format,
   ...
 ) {
   va_list args;
   va_start(args, format);
-  set_color_text(color);
+  set_color_fg(colorFg);
+  set_color_bg(colorBg);
   vprintf(format, args);
-  set_color_text(ColorText::DEFAULT);
+  set_color_fg(ColorFG::DEFAULT);
+  set_color_bg(ColorBG::BLACK);
   va_end(args);
 }
 
@@ -63,13 +69,25 @@ void term::remove_scrollbar() {
   throw "term::remove_scrollbar is only supported on Windows";
 #endif
 }
-size_t term::height_in_lines() {
+
+term::Dimensions term::dimensions() {
   HANDLE const hOut = GetStdHandle(STD_OUTPUT_HANDLE);
   CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo{};
   GetConsoleScreenBufferInfo(hOut, &screenBufferInfo);
-  return
+  return {
+    // width
+    static_cast<size_t>(screenBufferInfo.srWindow.Right) -
+    static_cast<size_t>(screenBufferInfo.srWindow.Left) + 1,
+    // height
     static_cast<size_t>(screenBufferInfo.srWindow.Bottom) -
-    static_cast<size_t>(screenBufferInfo.srWindow.Top) + 1;
+    static_cast<size_t>(screenBufferInfo.srWindow.Top) + 1
+  };
+}
+size_t term::width_in_cols() {
+  return term::dimensions().m_width;
+}
+size_t term::height_in_lines() {
+  return term::dimensions().m_height;
 }
 
 void term::cursor::hide() {

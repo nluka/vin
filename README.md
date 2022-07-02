@@ -4,22 +4,25 @@ My own Vim inspired text-editor.
 
 ## feature roadmap
 
-basics:
+### v1.0
+
+general:
 - [x] read/render files
 - [x] user config file
+- [x] line numbers
 - [ ] save edits
 - [ ] undo/redo
 - [ ] fast file navigation
+- [ ] syntax highlighting
 
 command mode:
 - [x] up/down navigation
 - [x] left/right navigation
 - [x] bol/eol navigation
 - [ ] word forward/backward navigation
-- [ ] line numbers
+- [ ] page forward/backward navigation
 - [ ] duplicate lines
 - [ ] delete lines
-- [ ] page forward/backward navigation
 - [ ] scroll up/down 1 line
 
 insert mode:
@@ -27,6 +30,8 @@ insert mode:
 - [ ] delete character
 - [ ] cut/copy/paste
 
-advanced:
-- [ ] syntax highlighting
+### beyond
+
 - [ ] multiple cursors
+- [ ] basic search
+- [ ] regex search

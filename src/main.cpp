@@ -8,41 +8,25 @@
 #include "term.hpp"
 #include "logger.hpp"
 #include "user-config.hpp"
+#include "movement.hpp"
+#include "util.hpp"
 
-void render(
-  std::vector<std::string> const &lines,
-  size_t const firstLineToRenderIdx,
-  bool const unhideCursorAfterRender = true
-) {
-  term::cursor::save_pos();
-  term::cursor::hide();
-  term::cursor::move_to_top_left();
+#pragma region state
+std::vector<std::string> s_lines{};
+size_t s_idxFirstVisibleLine = 0;
+char const *s_filePathname = nullptr;
+#pragma endregion state
 
-  // how many lines of text are we expecting to render?
-  size_t const numLinesToRender = term::height_in_lines() - 1;
+static char const *const s_lineNumFmt = " %4zu ";
+static size_t const s_lineNumTextWidth = 6;
 
-  // index of the last line we want to render
-  size_t const lastLineToRenderIdx =
-    firstLineToRenderIdx + numLinesToRender - 1;
+enum class RenderMode {
+  INFO_BAR_ONLY,
+  TEXT_AND_INFO_BAR,
+};
+void render(RenderMode);
 
-  size_t numLinesRendered = 0;
-
-  for (
-    size_t i = firstLineToRenderIdx;
-    (i <= lastLineToRenderIdx) && (i < lines.size());
-    ++i, ++numLinesRendered
-  ) {
-    std::string const &line = lines[i];
-    printf("%s", line.c_str());
-    term::clear_to_end_of_line();
-    printf("\n");
-  }
-
-  term::cursor::restore_last_saved_pos();
-  if (unhideCursorAfterRender) {
-    term::cursor::show();
-  }
-}
+#define REPEAT(n) for (size_t i = 1; i <= n; ++i)
 
 int main(int const argc, char const *const *const argv) {
   if (argc != 2) {
@@ -59,9 +43,6 @@ int main(int const argc, char const *const *const argv) {
 
   usrconf::load();
 
-  size_t firstVisibleLineIdx = 0;
-  std::vector<std::string> lines{};
-
   // read lines from specified file
   {
     char const *const fPathname = argv[1];
@@ -69,202 +50,197 @@ int main(int const argc, char const *const *const argv) {
     if (!file.is_open()) {
       logger::write(
         logger::EventType::FTL,
-        "failed to open file `%s`",
-        fPathname
+        "failed to open file `%s`", fPathname
       );
       std::exit(1);
     }
     if (!file.good()) {
       logger::write(
         logger::EventType::FTL,
-        "bad file `%s`",
-        fPathname
+        "bad file `%s`", fPathname
       );
       std::exit(1);
     }
     std::string line{};
     while (std::getline(file, line)) {
-      lines.emplace_back(line.c_str());
+      s_lines.emplace_back(line.c_str());
     }
   }
+
+  s_filePathname = argv[1];
 
   term::remove_scrollbar();
   term::cursor::disable_blinking();
   term::cursor::set_size(100);
+  term::cursor::move_right(s_lineNumTextWidth);
 
-  render(lines, firstVisibleLineIdx);
+  static term::Dimensions s_prevTermDimensions = term::dimensions();
+
+  render(RenderMode::TEXT_AND_INFO_BAR);
 
   while (true) {
-    int c = _getch();
+    int input = _getch();
 
-    if (c == 'q') {
+    if (static_cast<int>(input) == usrconf::key_exit()) {
       std::exit(0);
-    }
-
-    if (c == usrconf::nav::key_move_left())
-    {
-      // the terminal will prevent us from moving beyond the left boundary,
-      // so we don't need to do any checks for that - we can always move
-      term::cursor::move_left(1);
-    }
-    else if (c == usrconf::nav::key_move_right())
-    {
-      term::cursor::Position const cursorPos = term::cursor::get_pos();
-
-      // y-index of the cursor
-      size_t const cursorYPosInFile =
-        term::cursor::get_pos().m_y + firstVisibleLineIdx;
-
-      std::string const &currLine = lines[cursorYPosInFile];
-
-      bool const areWeAtEndOfCurrLine = cursorPos.m_x == currLine.length();
-
-      if (!areWeAtEndOfCurrLine) {
-        term::cursor::move_right(1);
-      }
-    }
-    else if (c == usrconf::nav::key_move_down())
-    {
-      term::cursor::Position const cursorPos = term::cursor::get_pos();
-
-      // y-index of the very last line in the file
-      size_t const lastLineIdx = lines.empty() ? 0 : lines.size() - 1;
-
-      // y-index of the cursor
-      size_t const cursorYPosInFile =
-        term::cursor::get_pos().m_y + firstVisibleLineIdx;
-
-      bool const areWeOnLastLine = cursorYPosInFile == lastLineIdx;
-
-      if (!areWeOnLastLine) {
-        size_t const firstLineBelowViewportIdx =
-          firstVisibleLineIdx + term::height_in_lines();
-
-        bool const areWeAtBottomOfViewport =
-          cursorYPosInFile == (firstLineBelowViewportIdx - 1);
-
-        std::string const &lineBelow = lines[cursorYPosInFile + 1];
-
-        bool const isLineBelowShorterThanCurrLine =
-          cursorPos.m_x > lineBelow.length();
-
-        if (!areWeAtBottomOfViewport) {
-          // move cursor down, and if the line below is shorter than current
-          // line then move cursor leftwards to the end of the line below
-          term::cursor::move(
-            isLineBelowShorterThanCurrLine
-              ? lineBelow.length()
-              : cursorPos.m_x,
-            static_cast<size_t>(cursorPos.m_y) + static_cast<size_t>(1)
-          );
-        } else {
-          // we are at the bottom of the viewport,
-          // shift viewport down one line and re-render
-          ++firstVisibleLineIdx;
-          render(lines, firstVisibleLineIdx, false);
-
-          if (isLineBelowShorterThanCurrLine) {
-            term::cursor::move(lineBelow.length(), cursorPos.m_y);
-          }
-          term::cursor::show();
-        }
-      }
-    }
-    else if (c == usrconf::nav::key_move_up())
-    {
-      term::cursor::Position const cursorPos = term::cursor::get_pos();
-
-      // y-index of the cursor
-      size_t const cursorYPosInFile =
-        term::cursor::get_pos().m_y + firstVisibleLineIdx;
-
-      bool const areWeOnFirstLine = cursorYPosInFile == 0;
-
-      if (!areWeOnFirstLine) {
-        size_t const firstLineAboveViewportIdx = firstVisibleLineIdx - 1;
-
-        bool const areWeAtTopOfViewport =
-          cursorYPosInFile == (firstLineAboveViewportIdx + 1);
-
-        std::string const &lineAbove = lines[cursorYPosInFile - 1];
-
-        bool const isLineAboveShorterThanCurrLine =
-          cursorPos.m_x > lineAbove.length();
-
-        if (!areWeAtTopOfViewport) {
-          // move cursor up, and if the line above is shorter than the current
-          // line then move cursor leftwards to the end of the line above
-          term::cursor::move(
-            isLineAboveShorterThanCurrLine
-              ? lineAbove.length()
-              : cursorPos.m_x,
-            static_cast<size_t>(cursorPos.m_y) - static_cast<size_t>(1)
-          );
-        } else {
-          // we are at the top of viewport,
-          // shift viewport up one line and re-render
-          --firstVisibleLineIdx;
-          render(lines, firstVisibleLineIdx, false);
-
-          if (isLineAboveShorterThanCurrLine) {
-            term::cursor::move(lineAbove.length(), cursorPos.m_y);
-          }
-          term::cursor::show();
-        }
-      }
-    }
-    else if (c == usrconf::nav::key_move_line_start())
-    {
-      term::cursor::Position const cursorPos = term::cursor::get_pos();
-
-      if (cursorPos.m_x != 0) {
-        // y-index of the cursor
-        size_t const cursorYPosInFile =
-          term::cursor::get_pos().m_y + firstVisibleLineIdx;
-
-        std::string const &currLine = lines[cursorYPosInFile];
-
-        size_t const firstNonWhitespaceCharPos = ([&currLine](){
-          for (size_t i = 0; i < currLine.length(); ++i) {
-            char const c = currLine[i];
-            if (c != ' ' && c != '\t') {
-              return i;
-            }
-          }
-          return currLine.length() - 1;
-        })();
-
-        term::cursor::move(
-          cursorPos.m_x > firstNonWhitespaceCharPos
-            ? firstNonWhitespaceCharPos
-            : 0,
-          cursorPos.m_y // stay on the same line
-        );
-      }
-    }
-    else if (c == usrconf::nav::key_move_line_end())
-    {
-      term::cursor::Position const cursorPos = term::cursor::get_pos();
-
-      // y-index of the cursor
-      size_t const cursorYPosInFile =
-        term::cursor::get_pos().m_y + firstVisibleLineIdx;
-
-      std::string const &currLine = lines[cursorYPosInFile];
-
-      if (cursorPos.m_x != currLine.length()) {
-        term::cursor::move(
-          currLine.length(),
-          cursorPos.m_y // stay on the same line
-        );
-      }
-    }
-    else
-    {
+    } else if (!usrconf::is_keybind(static_cast<char>(input))) {
       #ifdef _WIN32
       // make beep sound
       printf("%c", static_cast<char>(7));
       #endif
+
+      continue;
+    }
+
+    // check if terminal has changed size since last time,
+    // and reset the cursor if it has - we do this because Windows
+    // sometimes messes with the cursor when resizing the window.
+    {
+      term::Dimensions const termDimensions = term::dimensions();
+      if (
+        termDimensions.m_width != s_prevTermDimensions.m_width ||
+        termDimensions.m_height != s_prevTermDimensions.m_height
+      ) {
+        term::cursor::move(s_lineNumTextWidth, 0);
+      }
+      s_prevTermDimensions = termDimensions;
+    }
+
+    // relative to the terminal window, not the file
+    auto const cursorPos = term::cursor::get_pos();
+
+    move::StartLoc const startLoc{
+      s_lines,
+      // convert relative-to-terminal-window positions into relative-to-file
+      cursorPos.m_y + s_idxFirstVisibleLine,
+      cursorPos.m_x - s_lineNumTextWidth
+    };
+
+    // relative-to-file
+    move::Destination const dest = ([input, &startLoc]() -> move::Destination {
+      if (input == usrconf::nav::key_move_left()) {
+        return move::left(startLoc);
+      } if (input == usrconf::nav::key_move_right()) {
+        return move::right(startLoc);
+      } else if (input == usrconf::nav::key_move_up()) {
+        return move::up(startLoc);
+      } else if (input == usrconf::nav::key_move_down()) {
+        return move::down(startLoc);
+      } else if (input == usrconf::nav::key_move_line_start()) {
+        return move::line_start(startLoc);
+      } else if (input == usrconf::nav::key_move_line_end()) {
+        return move::line_end(startLoc);
+      } else {
+        throw "movement failed - bad destination";
+      }
+    })();
+
+    int verticalPosDiff =
+      static_cast<int>(dest.m_lineIdx) - static_cast<int>(startLoc.m_lineIdx);
+
+    if (bool const shouldScrollUp =
+      (verticalPosDiff < 0) &&
+      (cursorPos.m_y == usrconf::scroll_offset()) &&
+      (startLoc.m_lineIdx > usrconf::scroll_offset())
+    ) {
+      --s_idxFirstVisibleLine;
+      render(RenderMode::TEXT_AND_INFO_BAR);
+    } else if (bool const shouldScrollDown =
+      (verticalPosDiff > 0) &&
+      ((term::height_in_lines() - cursorPos.m_y) == usrconf::scroll_offset() + 2) &&
+      // is last line visible
+      !(s_idxFirstVisibleLine + term::height_in_lines() - 1 == s_lines.size())
+    ) {
+      ++s_idxFirstVisibleLine;
+      render(RenderMode::TEXT_AND_INFO_BAR);
+    } else {
+      term::cursor::move(
+        // convert relative-to-file positions into relative-to-terminal-window
+        dest.m_pos + s_lineNumTextWidth,
+        dest.m_lineIdx - s_idxFirstVisibleLine
+      );
+      render(RenderMode::INFO_BAR_ONLY);
     }
   }
+}
+
+void render(RenderMode renderMode) {
+  struct Location {
+    size_t m_lineNum;
+    size_t m_colNum;
+  };
+
+  // relative-to-file
+  Location const currLoc = ([]() -> Location {
+    auto const cursorPos = term::cursor::get_pos();
+    return {
+      cursorPos.m_y + s_idxFirstVisibleLine + 1,
+      (cursorPos.m_x + 1) - s_lineNumTextWidth
+    };
+  })();
+
+  size_t const termHeight = term::height_in_lines();
+  static size_t s_prevTermHeight = termHeight;
+  if (s_prevTermHeight != termHeight) {
+    // make sure to render everything if the terminal height has changed,
+    // if we only render the info bar then visual bugs happen
+    renderMode = RenderMode::TEXT_AND_INFO_BAR;
+  }
+
+  term::cursor::save_pos();
+  term::cursor::hide();
+  term::cursor::move(0, termHeight - 1); // bottom left
+
+  // no matter what, we always render the info bar
+  printf(
+    " \"%s\" Ln %zu Col %zu ",
+    s_filePathname,
+    currLoc.m_lineNum,
+    currLoc.m_colNum
+  );
+
+  if (renderMode == RenderMode::INFO_BAR_ONLY) {
+    term::cursor::restore_last_saved_pos();
+    term::cursor::show();
+    return;
+  }
+
+  size_t const numLinesToRender = termHeight - 1;
+  size_t const numLinesWithinViewport =
+    std::min(s_lines.size() - s_idxFirstVisibleLine, numLinesToRender);
+
+  if (numLinesWithinViewport < numLinesToRender) {
+    size_t const lineDeficiency = numLinesToRender - numLinesWithinViewport;
+    REPEAT(lineDeficiency) {
+      term::cursor::move_up(1);
+      printf("\r");
+      term::printf_colored(
+        term::ColorFG::BLUE,
+        term::ColorBG::BLACK,
+        "~"
+      );
+      term::clear_to_end_of_line();
+    }
+  }
+
+  size_t const lastLineNum =
+    s_idxFirstVisibleLine +
+    std::min(numLinesWithinViewport, numLinesToRender);
+
+  size_t currLineNum = lastLineNum;
+  REPEAT(numLinesWithinViewport) {
+    term::cursor::move_up(1);
+    printf("\r");
+    term::printf_colored(
+      term::ColorFG::LIGHT_YELLOW,
+      term::ColorBG::BLACK,
+      " %4zu ", currLineNum
+    );
+    printf(s_lines[currLineNum - 1].c_str());
+    term::clear_to_end_of_line();
+    --currLineNum;
+  }
+
+  term::cursor::restore_last_saved_pos();
+  term::cursor::show();
 }

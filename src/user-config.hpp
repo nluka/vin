@@ -6,6 +6,12 @@ namespace usrconf {
 
 void load();
 
+bool is_keybind(char c);
+
+char key_exit();
+
+size_t scroll_offset();
+
 // Navigation.
 namespace nav {
   char key_move_up();

@@ -5,6 +5,17 @@
 #include <iostream>
 #include "logger.hpp"
 #include "user-config.hpp"
+#include "util.hpp"
+
+static char s_keyMoveExit = 'q';
+char usrconf::key_exit() {
+  return s_keyMoveExit;
+}
+
+static size_t s_scrollOffset = 3;
+size_t usrconf::scroll_offset() {
+  return s_scrollOffset;
+}
 
 static char s_keyMoveUp = 'k';
 char usrconf::nav::key_move_up() {
@@ -110,6 +121,8 @@ void usrconf::load() {
       s_keyMoveLineStart = value[0];
     } else if (setting == "moveLineEnd") {
       s_keyMoveLineEnd = value[0];
+    } else if (setting == "scrollOffset") {
+      s_scrollOffset = util::ascii_digit_to_int(value[0]);
     } else {
       logger::write(
         logger::EventType::WRN,
@@ -120,4 +133,18 @@ void usrconf::load() {
   }
 
   logger::write(logger::EventType::INF, "finished reading `vin.cfg`");
+}
+
+bool usrconf::is_keybind(char const c) {
+  char keybinds[] {
+    s_keyMoveUp,
+    s_keyMoveDown,
+    s_keyMoveLeft,
+    s_keyMoveRight,
+    s_keyMoveLineStart,
+    s_keyMoveLineEnd,
+    '\0'
+  };
+
+  return std::strchr(keybinds, c);
 }
