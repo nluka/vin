@@ -138,22 +138,25 @@ int main(int const argc, char const *const *const argv) {
     int verticalPosDiff =
       static_cast<int>(dest.m_lineIdx) - static_cast<int>(startLoc.m_lineIdx);
 
-    if (bool const shouldScrollUp =
+    if (
+      // should scroll viewport up?
       (verticalPosDiff < 0) &&
       (cursorPos.m_y == usrconf::scroll_offset()) &&
       (startLoc.m_lineIdx > usrconf::scroll_offset())
     ) {
       --s_idxFirstVisibleLine;
       render(RenderMode::TEXT_AND_INFO_BAR);
-    } else if (bool const shouldScrollDown =
+    } else if (
+      // should scroll viewport down?
       (verticalPosDiff > 0) &&
       ((term::height_in_lines() - cursorPos.m_y) == usrconf::scroll_offset() + 2) &&
-      // is last line visible
-      !(s_idxFirstVisibleLine + term::height_in_lines() - 1 == s_lines.size())
+      !(s_idxFirstVisibleLine + term::height_in_lines() - 1 ==
+        s_lines.size()) // is last line visible?
     ) {
       ++s_idxFirstVisibleLine;
       render(RenderMode::TEXT_AND_INFO_BAR);
     } else {
+      // no need to move the viewport, just move the cursor
       term::cursor::move(
         // convert relative-to-file positions into relative-to-terminal-window
         dest.m_pos + s_lineNumTextWidth,
